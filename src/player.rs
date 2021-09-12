@@ -1,7 +1,7 @@
 use crate::ground::Ground;
 use crate::physics::{
-    Ballistic, ColliderType, CollisionShape, CollisionType, Collisions, Hurtbox, PhysicsSettings, Position,
-    Velocity,
+    Acceleration, Ballistic, ColliderType, CollisionShape, CollisionType, Collisions, Hurtbox,
+    PhysicsSettings, Position, Velocity,
 };
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::Collision;
@@ -25,6 +25,7 @@ pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<C
         .insert(Player)
         .insert(Velocity(Vec2::new(0.0, 0.0)))
         .insert(Position(Vec2::new(0.0, 15.0)))
+        .insert(Acceleration(Vec2::new(0.0, 0.0)))
         .insert(Hurtbox {
             shape: CollisionShape::Rect(Vec2::new(30.0, 30.0)),
             col_type: ColliderType::Player,
@@ -33,44 +34,64 @@ pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<C
 }
 
 pub fn player_input(
-    mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(Entity, &mut Velocity, Option<&mut Ballistic>), With<Player>>,
+    mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
     physics_settings: Res<PhysicsSettings>,
 ) {
-    if let Ok((e, mut v, ballistic)) = query.single_mut() {
-        if keyboard_input.just_pressed(KeyCode::Space) {
-            if let None = ballistic {
-                v.0.y = physics_settings.initial_jump_velocity;
-                commands.entity(e).insert(Ballistic {
-                    gravity: physics_settings.hold_gravity,
-                });
-            }
+    if let Ok((mut v, mut a)) = query.single_mut() {
+        if keyboard_input.just_pressed(KeyCode::Space) && a.0.y == 0.0 {
+            v.0.y = physics_settings.initial_jump_velocity;
+            a.0.y = physics_settings.hold_gravity;
         }
 
         if keyboard_input.just_released(KeyCode::Space) {
-            if let Some(mut ballistic) = ballistic {
-                ballistic.gravity = physics_settings.normal_gravity;
-            }
+            a.0.y = physics_settings.normal_gravity;
         }
     }
 }
 
+pub fn player_horizontal_accel(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut query: Query<(&Velocity, &mut Acceleration), With<Player>>,
+    physics_settings: Res<PhysicsSettings>,
+) {
+    let (v, mut a) = query.single_mut().unwrap();
+    if keyboard_input.pressed(KeyCode::A) {
+        a.0.x = -physics_settings.horizontal_a;
+    } else if keyboard_input.pressed(KeyCode::D) {
+        a.0.x = physics_settings.horizontal_a;
+    } else if v.0.x > 0.0 {
+    } else {
+        a.0.x = 0.0;
+    }
+}
+
 pub fn handle_player_collides_ground(
-    mut commands: Commands,
     mut player_q: Query<
-        (Entity, &mut Position, &mut Velocity, &Collisions, &Sprite),
-        (With<Player>, With<Ballistic>, Changed<Collisions>),
+        (
+            &mut Position,
+            &mut Velocity,
+            &mut Acceleration,
+            &Collisions,
+            &Sprite,
+        ),
+        (With<Player>, Changed<Collisions>),
     >,
     grounds_q: Query<Entity, With<Ground>>,
 ) {
-    if let Ok((e, mut p, mut v, cs, sprite)) = player_q.single_mut() {
+    if let Ok((mut p, mut v, mut a, cs, sprite)) = player_q.single_mut() {
         for collision_data in cs.0.iter() {
             if grounds_q.get(collision_data.entity).is_ok() {
                 match (&collision_data.direction, &collision_data.collision_type) {
-                    (&Collision::Top, &CollisionType::PlayerHitsGround { ground_pos, ground_size}) => {
+                    (
+                        &Collision::Top,
+                        &CollisionType::PlayerHitsGround {
+                            ground_pos,
+                            ground_size,
+                        },
+                    ) => {
                         v.0.y = 0.0;
-                        commands.entity(e).remove::<Ballistic>();
+                        a.0.y = 0.0;
                         p.0.y = ground_pos.y + ground_size.y / 2.0 + sprite.size.y / 2.0;
                     }
                     _ => {}

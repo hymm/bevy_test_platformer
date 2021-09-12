@@ -10,10 +10,13 @@ pub struct Ballistic {
 }
 pub struct Position(pub Vec2);
 pub struct Velocity(pub Vec2);
+
+pub struct Acceleration(pub Vec2);
 pub struct PhysicsSettings {
     pub normal_gravity: f32,
     pub hold_gravity: f32,
     pub initial_jump_velocity: f32,
+    pub horizontal_a: f32,
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -21,12 +24,13 @@ pub fn setup_physics(mut commands: Commands) {
         normal_gravity: -7000.0,
         hold_gravity: -2500.0,
         initial_jump_velocity: 1000.0,
+        horizontal_a: 200.0,
     });
 }
 
-pub fn ballistic_physics(mut query: Query<(&mut Velocity, &Ballistic)>) {
-    for (mut v, ballistic) in query.iter_mut() {
-        v.0.y += ballistic.gravity * TIME_STEP;
+pub fn update_velocities(mut query: Query<(&mut Velocity, &Acceleration)>) {
+    for (mut v, a) in query.iter_mut() {
+        v.0 += a.0 * TIME_STEP;
     }
 }
 
@@ -99,7 +103,7 @@ impl Hurtbox {
                                 ground_size: hit_size.clone(),
                             },
                         }),
-                        _ => None
+                        _ => None,
                     };
                 }
                 return None;
