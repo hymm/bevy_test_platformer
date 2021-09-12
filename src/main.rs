@@ -1,18 +1,19 @@
 mod physics;
+mod player;
+mod ground;
 use crate::physics::{
-    apply_velocity, ballistic_physics, setup_physics, update_translation, Ballistic, Position,
-    Velocity, TIME_STEP
+    ballistic_physics, check_collisions, setup_physics, update_positions, update_translation,
+    TIME_STEP,
 };
+use crate::player::{player_input, spawn_player, handle_player_collides_ground};
+use crate::ground::spawn_ground;
 use bevy::{core::FixedTimestep, prelude::*};
-struct Materials {
-    player_material: Handle<ColorMaterial>,
-    ground_material: Handle<ColorMaterial>,
-}
 
 #[derive(Clone, Hash, Debug, Eq, PartialEq, SystemLabel)]
-enum Systems {
+enum System {
     UpdatePosition,
     UpdateTranslation,
+    Collision,
 }
 
 fn main() {
@@ -23,69 +24,25 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
+        .add_startup_system(spawn_player)
+        .add_startup_system(spawn_ground)
         .add_startup_system(setup_physics)
         .add_system(player_input)
         .add_system_set(
             SystemSet::new()
+                .before(System::UpdateTranslation)
                 .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-                .with_system(ballistic_physics.before(Systems::UpdatePosition))
-                .with_system(
-                    apply_velocity
-                        .label(Systems::UpdatePosition)
-                        .before(Systems::UpdateTranslation),
-                ),
+                .with_system(ballistic_physics.before(System::UpdatePosition))
+                .with_system(update_positions.label(System::UpdatePosition))
+                .with_system(check_collisions.label(System::Collision).after(System::UpdatePosition))
+                .with_system(handle_player_collides_ground.after(System::Collision))
         )
-        .add_system(update_translation.label(Systems::UpdateTranslation))
+        .add_system(update_translation.label(System::UpdateTranslation))
         .run();
 }
 
-struct Player;
-struct Ground;
-
-fn setup(mut commands: Commands, mut material_assets: ResMut<Assets<ColorMaterial>>) {
-    let materials = Materials {
-        player_material: material_assets.add(Color::rgb(0.7, 0.7, 0.7).into()),
-        ground_material: material_assets.add(Color::rgb(0.3, 0.3, 0.3).into()),
-    };
-
-    // spawn player
-    commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
-            material: materials.player_material.clone(),
-            sprite: Sprite::new(Vec2::new(30.0, 30.0)),
-            transform: Transform::from_translation(Vec3::new(0.0, 15.0, 0.0)),
-            ..Default::default()
-        })
-        .insert(Player)
-        .insert(Velocity(Vec2::new(0.0, 0.0)))
-        .insert(Position(Vec2::new(0.0, 15.0)));
-
-    commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
-            material: materials.ground_material.clone(),
-            sprite: Sprite::new(Vec2::new(240.0, 60.0)),
-            transform: Transform::from_translation(Vec3::new(0.0, -30.0, 0.0)),
-            ..Default::default()
-        })
-        .insert(Ground);
-
+fn setup(mut commands: Commands) {
     commands
         .spawn()
         .insert_bundle(OrthographicCameraBundle::new_2d());
-    commands.insert_resource(materials);
-}
-
-fn player_input(
-    mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(Entity, &mut Velocity), (With<Player>, Without<Ballistic>)>,
-) {
-    if let Ok((e, mut v)) = query.single_mut() {
-        if keyboard_input.pressed(KeyCode::Space) {
-            v.0.y = 400.0;
-            commands.entity(e).insert(Ballistic);
-        }
-    }
 }
