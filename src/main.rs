@@ -1,12 +1,12 @@
+mod ground;
 mod physics;
 mod player;
-mod ground;
+use crate::ground::spawn_ground;
 use crate::physics::{
     ballistic_physics, check_collisions, setup_physics, update_positions, update_translation,
     TIME_STEP,
 };
-use crate::player::{player_input, spawn_player, handle_player_collides_ground};
-use crate::ground::spawn_ground;
+use crate::player::{handle_player_collides_ground, player_input, spawn_player};
 use bevy::{core::FixedTimestep, prelude::*};
 
 #[derive(Clone, Hash, Debug, Eq, PartialEq, SystemLabel)]
@@ -34,8 +34,12 @@ fn main() {
                 .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
                 .with_system(ballistic_physics.before(System::UpdatePosition))
                 .with_system(update_positions.label(System::UpdatePosition))
-                .with_system(check_collisions.label(System::Collision).after(System::UpdatePosition))
-                .with_system(handle_player_collides_ground.after(System::Collision))
+                .with_system(
+                    check_collisions
+                        .label(System::Collision)
+                        .after(System::UpdatePosition),
+                )
+                .with_system(handle_player_collides_ground.after(System::Collision)),
         )
         .add_system(update_translation.label(System::UpdateTranslation))
         .run();

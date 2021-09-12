@@ -5,24 +5,28 @@ use bevy::{
 
 pub const TIME_STEP: f32 = 1.0 / 60.0;
 
-pub struct Ballistic;
+pub struct Ballistic {
+    pub gravity: f32,
+}
 pub struct Position(pub Vec2);
 pub struct Velocity(pub Vec2);
 pub struct PhysicsSettings {
-    pub gravity: f32,
+    pub normal_gravity: f32,
+    pub hold_gravity: f32,
     pub initial_jump_velocity: f32,
 }
 
 pub fn setup_physics(mut commands: Commands) {
-    commands.insert_resource(PhysicsSettings { gravity: -2500.0, initial_jump_velocity: 800.0 });
+    commands.insert_resource(PhysicsSettings {
+        normal_gravity: -7000.0,
+        hold_gravity: -2500.0,
+        initial_jump_velocity: 1000.0,
+    });
 }
 
-pub fn ballistic_physics(
-    mut query: Query<&mut Velocity, With<Ballistic>>,
-    physics_config: Res<PhysicsSettings>,
-) {
-    for mut v in query.iter_mut() {
-        v.0.y += physics_config.gravity * TIME_STEP;
+pub fn ballistic_physics(mut query: Query<(&mut Velocity, &Ballistic)>) {
+    for (mut v, ballistic) in query.iter_mut() {
+        v.0.y += ballistic.gravity * TIME_STEP;
     }
 }
 
@@ -46,14 +50,26 @@ pub enum CollisionShape {
 pub struct CollisionData {
     pub entity: Entity,
     pub direction: Collision,
+    pub collision_type: CollisionType,
+}
+
+pub enum CollisionType {
+    PlayerHitsGround { ground_pos: Vec2, ground_size: Vec2 },
+}
+
+pub enum ColliderType {
+    Player,
+    Ground,
 }
 
 pub struct Hitbox {
     pub shape: CollisionShape,
+    pub col_type: ColliderType,
 }
 
 pub struct Hurtbox {
     pub shape: CollisionShape,
+    pub col_type: ColliderType,
 }
 
 pub struct Collisions(pub Vec<CollisionData>);
@@ -74,10 +90,17 @@ impl Hurtbox {
                     hitbox_position.0.extend(0.0),
                     hit_size,
                 ) {
-                    return Some(CollisionData {
-                        entity: hit_entity,
-                        direction,
-                    });
+                    return match (&self.col_type, &hitbox.col_type) {
+                        (&ColliderType::Player, &ColliderType::Ground) => Some(CollisionData {
+                            entity: hit_entity,
+                            direction,
+                            collision_type: CollisionType::PlayerHitsGround {
+                                ground_pos: hitbox_position.0.clone(),
+                                ground_size: hit_size.clone(),
+                            },
+                        }),
+                        _ => None
+                    };
                 }
                 return None;
             }
