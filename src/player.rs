@@ -1,6 +1,6 @@
 use crate::ground::Ground;
 use crate::physics::{
-    Acceleration, Ballistic, ColliderType, CollisionShape, CollisionType, Collisions, Hurtbox,
+    Acceleration, ColliderType, CollisionShape, CollisionType, Collisions, Hurtbox,
     PhysicsSettings, Position, Velocity,
 };
 use bevy::prelude::*;
@@ -52,16 +52,20 @@ pub fn player_input(
 
 pub fn player_horizontal_accel(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&Velocity, &mut Acceleration), With<Player>>,
+    mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
     physics_settings: Res<PhysicsSettings>,
 ) {
-    let (v, mut a) = query.single_mut().unwrap();
+    let (mut v, mut a) = query.single_mut().unwrap();
     if keyboard_input.pressed(KeyCode::A) {
         a.0.x = -physics_settings.horizontal_a;
     } else if keyboard_input.pressed(KeyCode::D) {
         a.0.x = physics_settings.horizontal_a;
-    } else if v.0.x > 0.0 {
+    } else if v.0.x > physics_settings.stopping_horizontal_speed {
+        a.0.x = -physics_settings.friction;
+    } else if v.0.x < -physics_settings.stopping_horizontal_speed {
+        a.0.x = physics_settings.friction;
     } else {
+        v.0.x = 0.0;
         a.0.x = 0.0;
     }
 }

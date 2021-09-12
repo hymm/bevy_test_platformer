@@ -5,9 +5,6 @@ use bevy::{
 
 pub const TIME_STEP: f32 = 1.0 / 60.0;
 
-pub struct Ballistic {
-    pub gravity: f32,
-}
 pub struct Position(pub Vec2);
 pub struct Velocity(pub Vec2);
 
@@ -17,6 +14,8 @@ pub struct PhysicsSettings {
     pub hold_gravity: f32,
     pub initial_jump_velocity: f32,
     pub horizontal_a: f32,
+    pub friction: f32,
+    pub stopping_horizontal_speed: f32,
 }
 
 pub fn setup_physics(mut commands: Commands) {
@@ -25,6 +24,8 @@ pub fn setup_physics(mut commands: Commands) {
         hold_gravity: -2500.0,
         initial_jump_velocity: 1000.0,
         horizontal_a: 200.0,
+        friction: 100.0,
+        stopping_horizontal_speed: 100.0,
     });
 }
 
