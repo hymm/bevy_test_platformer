@@ -1,5 +1,6 @@
 use bevy::{
     prelude::*,
+    reflect::TypeUuid,
     sprite::collide_aabb::{collide, Collision},
 };
 
@@ -9,6 +10,9 @@ pub struct Position(pub Vec2);
 pub struct Velocity(pub Vec2);
 
 pub struct Acceleration(pub Vec2);
+
+#[derive(serde::Deserialize, TypeUuid)]
+#[uuid = "fae44c41-c109-446a-a48f-0d7742ab877a"]
 pub struct PhysicsSettings {
     pub normal_gravity: f32,
     pub hold_gravity: f32,

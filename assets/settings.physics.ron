@@ -1,0 +1,8 @@
+(
+    normal_gravity: -7000.0,
+    hold_gravity: -2500.0,
+    initial_jump_velocity: 1000.0,
+    horizontal_a: 200.0,
+    friction: 100.0,
+    stopping_horizontal_speed: 100.0,
+)
