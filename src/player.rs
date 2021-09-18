@@ -1,7 +1,7 @@
 use crate::ground::Ground;
 use crate::physics::{
     Acceleration, ColliderType, CollisionShape, CollisionType, Collisions, Hurtbox,
-    PhysicsSettings, Position, Velocity,
+    PhysicsSettings, PhysicsSettingsHandle, Position, Velocity,
 };
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::Collision;
@@ -36,34 +36,43 @@ pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<C
 pub fn player_input(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
-    physics_settings: Res<PhysicsSettings>,
+    physics_settings: Res<Assets<PhysicsSettings>>,
+    physics_settings_handle: Res<PhysicsSettingsHandle>,
 ) {
-    if let Ok((mut v, mut a)) = query.single_mut() {
-        if keyboard_input.just_pressed(KeyCode::Space) && a.0.y == 0.0 {
-            v.0.y = physics_settings.initial_jump_velocity;
-            a.0.y = physics_settings.hold_gravity;
-        }
+    let s = physics_settings
+        .get(&physics_settings_handle.0)
+        .expect("no physics settings found");
+    let (mut v, mut a) = query.single_mut();
 
-        if keyboard_input.just_released(KeyCode::Space) {
-            a.0.y = physics_settings.normal_gravity;
-        }
+    if keyboard_input.just_pressed(KeyCode::Space) && a.0.y == 0.0 {
+        v.0.y = s.initial_jump_velocity;
+        a.0.y = s.hold_gravity;
+    }
+
+    if keyboard_input.just_released(KeyCode::Space) {
+        a.0.y = s.normal_gravity;
     }
 }
 
 pub fn player_horizontal_accel(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
-    physics_settings: Res<PhysicsSettings>,
+    physics_settings: Res<Assets<PhysicsSettings>>,
+    physics_settings_handle: Res<PhysicsSettingsHandle>,
 ) {
-    let (mut v, mut a) = query.single_mut().unwrap();
+    let s = physics_settings
+        .get(&physics_settings_handle.0)
+        .expect("no physics settings found");
+
+    let (mut v, mut a) = query.single_mut();
     if keyboard_input.pressed(KeyCode::A) {
-        a.0.x = -physics_settings.horizontal_a;
+        a.0.x = -s.horizontal_a;
     } else if keyboard_input.pressed(KeyCode::D) {
-        a.0.x = physics_settings.horizontal_a;
-    } else if v.0.x > physics_settings.stopping_horizontal_speed {
-        a.0.x = -physics_settings.friction;
-    } else if v.0.x < -physics_settings.stopping_horizontal_speed {
-        a.0.x = physics_settings.friction;
+        a.0.x = s.horizontal_a;
+    } else if v.0.x > s.stopping_horizontal_speed {
+        a.0.x = -s.friction;
+    } else if v.0.x < -s.stopping_horizontal_speed {
+        a.0.x = s.friction;
     } else {
         v.0.x = 0.0;
         a.0.x = 0.0;
@@ -83,7 +92,7 @@ pub fn handle_player_collides_ground(
     >,
     grounds_q: Query<Entity, With<Ground>>,
 ) {
-    if let Ok((mut p, mut v, mut a, cs, sprite)) = player_q.single_mut() {
+    for (mut p, mut v, mut a, cs, sprite) in player_q.iter_mut() {
         for collision_data in cs.0.iter() {
             if grounds_q.get(collision_data.entity).is_ok() {
                 match (&collision_data.direction, &collision_data.collision_type) {

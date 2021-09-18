@@ -1,3 +1,4 @@
+use crate::loader::NeedToLoad;
 use bevy::{
     prelude::*,
     reflect::TypeUuid,
@@ -22,15 +23,18 @@ pub struct PhysicsSettings {
     pub stopping_horizontal_speed: f32,
 }
 
-pub fn setup_physics(mut commands: Commands) {
-    commands.insert_resource(PhysicsSettings {
-        normal_gravity: -7000.0,
-        hold_gravity: -2500.0,
-        initial_jump_velocity: 1000.0,
-        horizontal_a: 200.0,
-        friction: 100.0,
-        stopping_horizontal_speed: 100.0,
-    });
+#[derive(Default)]
+pub struct PhysicsSettingsHandle(pub Handle<PhysicsSettings>);
+
+pub fn load_physics(
+    mut need_to_load: ResMut<NeedToLoad>,
+    server: Res<AssetServer>,
+    mut physics_settings: ResMut<PhysicsSettingsHandle>,
+) {
+    physics_settings.0 = server.load("settings.physics.ron");
+    need_to_load
+        .handles
+        .push(physics_settings.0.clone_untyped());
 }
 
 pub fn update_velocities(mut query: Query<(&mut Velocity, &Acceleration)>) {
