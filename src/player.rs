@@ -1,11 +1,11 @@
 use crate::ground::Ground;
 use crate::physics::{
-    Acceleration, ColliderType, CollisionShape, CollisionType, Collisions, Hurtbox,
+    Acceleration, ColliderType, Collision, CollisionShape, CollisionType, Collisions, Hurtbox,
     PhysicsSettings, PhysicsSettingsHandle, Position, Velocity,
 };
 use bevy::prelude::*;
-use bevy::sprite::collide_aabb::Collision;
 pub struct Player;
+pub struct PlayerRay;
 
 // pub struct PlayerMaterial {
 //   material: Handle<ColorMaterial>
@@ -30,6 +30,16 @@ pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<C
             shape: CollisionShape::Rect(Vec2::new(30.0, 30.0)),
             col_type: ColliderType::Player,
         })
+        .insert(Collisions(Vec::new()));
+
+    commands
+        .spawn()
+        .insert(PlayerRay)
+        .insert(Hurtbox {
+            shape: CollisionShape::Ray(Vec2::new(0.0, -30.1)),
+            col_type: ColliderType::PlayerRay,
+        })
+        .insert(Position(Vec2::new(0.0, 15.0)))
         .insert(Collisions(Vec::new()));
 }
 
@@ -111,6 +121,27 @@ pub fn handle_player_collides_ground(
                 }
                 // TODO: remove collision event if it matches
             }
+        }
+    }
+}
+
+pub fn handle_player_ray_collides_ground(
+    player_rays: Query<&Collisions, (With<PlayerRay>, Changed<Collisions>)>,
+) {
+    for (c) in player_rays.iter() {
+        for collision_data in c.0.iter() {
+                match(&collision_data.direction, &collision_data.collision_type) {
+                    (
+                        &Collision::Top,
+                        &CollisionType::PlayerRayHitsGround {
+                            ground_pos, ground_size
+                        }
+                    ) => {
+
+                    }
+                    _ => {}
+                }
+            
         }
     }
 }

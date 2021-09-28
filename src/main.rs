@@ -2,12 +2,13 @@ mod ground;
 mod loader;
 mod physics;
 mod player;
+mod player_fsm;
 use crate::ground::spawn_ground;
 use crate::loader::load_state_run_criteria;
 use crate::loader::LoaderState;
 use crate::physics::{
-    check_collisions, load_physics, update_positions, update_translation, update_velocities,
-    PhysicsSettings, PhysicsSettingsHandle, TIME_STEP,
+    check_collisions, clean_up_collisions, load_physics, update_positions, update_translation,
+    update_velocities, PhysicsSettings, PhysicsSettingsHandle, TIME_STEP,
 };
 use crate::player::{
     handle_player_collides_ground, player_horizontal_accel, player_input, spawn_player,
@@ -21,6 +22,7 @@ enum System {
     UpdatePosition,
     UpdateTranslation,
     Collision,
+    CollisionCleanUp,
     PhysicsSet,
 }
 
@@ -88,7 +90,12 @@ fn main() {
                         .label(System::Collision)
                         .after(System::UpdatePosition),
                 )
-                .with_system(handle_player_collides_ground.after(System::Collision)),
+                .with_system(
+                    handle_player_collides_ground
+                        .after(System::Collision)
+                        .before(System::CollisionCleanUp),
+                )
+                .with_system(clean_up_collisions.label(System::CollisionCleanUp)),
         )
         .add_system(update_translation.label(System::UpdateTranslation))
         .run();
