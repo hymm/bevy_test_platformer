@@ -574,6 +574,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_asset_ron",
+ "emergent",
  "serde",
 ]
 
@@ -1267,6 +1268,12 @@ checksum = "0aafbcdb8afc29c1a7ee5fbe53b5d62f4565b35a042a662ca9fecd0b54dae6f4"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "emergent"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c0cb10a675593aa3239223b97248ea5e97bc0f178a0ad539846b0a96d9beaf9"
 
 [[package]]
 name = "env_logger"

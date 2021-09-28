@@ -8,5 +8,6 @@ edition = "2018"
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy" }
 bevy_asset_ron = { path = "../bevy_asset_ron" }
+emergent = "1.4.0"
 # bevycheck = { path = "../bevycheck" }
 serde = "1"
