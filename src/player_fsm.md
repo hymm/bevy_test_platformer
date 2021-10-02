@@ -13,6 +13,7 @@ graph LR
   OnGround --> InAirReleasedB
   InAirPressingB --> OnGround
   InAirPressingB --> InAirReleasedB
+  InAirReleasedB --> InAirPressingB
   InAirReleasedB --> OnGround
   OnGround --> Dead
   InAirPressingB --> Dead
