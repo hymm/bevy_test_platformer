@@ -4,7 +4,10 @@ use crate::physics::{
     PhysicsSettings, PhysicsSettingsHandle, Position, Velocity,
 };
 use bevy::prelude::*;
+
+#[derive(Component)]
 pub struct Player;
+#[derive(Component)]
 pub struct PlayerRay;
 
 // pub struct PlayerMaterial {

@@ -1,5 +1,7 @@
 use crate::physics::{ColliderType, CollisionShape, Hitbox, Position};
 use bevy::prelude::*;
+
+#[derive(Component)]
 pub struct Ground;
 
 pub fn spawn_ground(mut commands: Commands, mut material_assets: ResMut<Assets<ColorMaterial>>) {

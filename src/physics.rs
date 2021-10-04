@@ -3,12 +3,15 @@ use bevy::{prelude::*, reflect::TypeUuid};
 
 pub const TIME_STEP: f32 = 1.0 / 60.0;
 
+#[derive(Component)]
 pub struct Position(pub Vec2);
+#[derive(Component)]
 pub struct Velocity(pub Vec2);
 
+#[derive(Component)]
 pub struct Acceleration(pub Vec2);
 
-#[derive(serde::Deserialize, TypeUuid)]
+#[derive(serde::Deserialize, TypeUuid, Component)]
 #[uuid = "fae44c41-c109-446a-a48f-0d7742ab877a"]
 pub struct PhysicsSettings {
     pub normal_gravity: f32,
@@ -74,11 +77,13 @@ pub enum ColliderType {
     Ground,
 }
 
+#[derive(Component)]
 pub struct Hitbox {
     pub shape: CollisionShape,
     pub col_type: ColliderType,
 }
 
+#[derive(Component)]
 pub struct Hurtbox {
     pub shape: CollisionShape,
     pub col_type: ColliderType,
@@ -196,6 +201,7 @@ fn raycast_to_box(ray_pos: Vec2, ray: Vec2, box_pos: Vec2, box_size: Vec2) -> Op
     }
 }
 
+#[derive(Component)]
 pub struct Collisions(pub Vec<CollisionData>);
 
 impl Hurtbox {
