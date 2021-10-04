@@ -3,16 +3,14 @@ use crate::physics::{
     Acceleration, ColliderType, Collision, CollisionShape, CollisionType, Collisions, Hurtbox,
     PhysicsSettings, PhysicsSettingsHandle, Position, Velocity,
 };
+use crate::player_fsm::{PlayerFSM, PlayerMemory, PlayerState};
 use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Player;
+
 #[derive(Component)]
 pub struct PlayerRay;
-
-// pub struct PlayerMaterial {
-//   material: Handle<ColorMaterial>
-// }
 
 pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<ColorMaterial>>) {
     let material = material_assets.add(Color::rgb(0.7, 0.7, 0.7).into());
@@ -43,12 +41,14 @@ pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<C
             col_type: ColliderType::PlayerRay,
         })
         .insert(Position(Vec2::new(0.0, 15.0)))
-        .insert(Collisions(Vec::new()));
+        .insert(Collisions(Vec::new()))
+        .insert(PlayerFSM::new());
 }
 
 pub fn player_input(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
+    mut player_fsm: Query<&mut PlayerFSM, With<Player>>,
     physics_settings: Res<Assets<PhysicsSettings>>,
     physics_settings_handle: Res<PhysicsSettingsHandle>,
 ) {
@@ -56,9 +56,16 @@ pub fn player_input(
         .get(&physics_settings_handle.0)
         .expect("no physics settings found");
     let (mut v, mut a) = query.single_mut();
+    let mut fsm = player_fsm.single_mut();
 
     if keyboard_input.just_pressed(KeyCode::Space) && a.0.y == 0.0 {
         v.0.y = s.initial_jump_velocity;
+        let mut memory = PlayerMemory {
+            player_query: &mut *a,
+            settings: &mut s
+        };
+        fsm.0.change_active_state(Some(PlayerState::InAirPressedB), &mut memory, true);
+        fsm.0.update(&mut memory);
         a.0.y = s.hold_gravity;
     }
 
@@ -133,18 +140,16 @@ pub fn handle_player_ray_collides_ground(
 ) {
     for (c) in player_rays.iter() {
         for collision_data in c.0.iter() {
-                match(&collision_data.direction, &collision_data.collision_type) {
-                    (
-                        &Collision::Top,
-                        &CollisionType::PlayerRayHitsGround {
-                            ground_pos, ground_size
-                        }
-                    ) => {
-
-                    }
-                    _ => {}
-                }
-            
+            match (&collision_data.direction, &collision_data.collision_type) {
+                (
+                    &Collision::Top,
+                    &CollisionType::PlayerRayHitsGround {
+                        ground_pos,
+                        ground_size,
+                    },
+                ) => {}
+                _ => {}
+            }
         }
     }
 }
