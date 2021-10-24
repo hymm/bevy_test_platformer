@@ -3,9 +3,9 @@ use bevy::prelude::*;
 use emergent::prelude::*;
 use std::hash::Hash;
 
-pub struct PlayerMemory {
-    player_query: &'static mut Acceleration, // TODO: replace with a system param
-    settings: &'static mut PhysicsSettings,
+pub struct PlayerMemory<'a> {
+    a: Mut<'a, Acceleration>, // TODO: replace with a system param
+                              // settings: &'static PhysicsSettings,
 }
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -17,29 +17,31 @@ pub enum PlayerState {
 }
 
 struct OnGroundTasks;
-impl Task<PlayerMemory> for OnGroundTasks {
+impl<'a> Task<PlayerMemory<'a>> for OnGroundTasks {
     fn on_enter(&mut self, memory: &mut PlayerMemory) {
-        memory.player_query.0.y = 0.0;
+        memory.a.0.y = 0.0;
     }
 }
 
 struct InAirPressedBTasks;
-impl Task<PlayerMemory> for InAirPressedBTasks {
+impl<'a> Task<PlayerMemory<'a>> for InAirPressedBTasks {
     fn on_enter(&mut self, memory: &mut PlayerMemory) {
-        memory.player_query.0.y = memory.settings.hold_gravity;
+        // memory.player_query.0.y = memory.settings.hold_gravity;
+        memory.a.0.y = -1.0;
     }
 }
 
 struct InAirReleasedBTasks;
-impl Task<PlayerMemory> for InAirReleasedBTasks {
+impl<'a> Task<PlayerMemory<'a>> for InAirReleasedBTasks {
     fn on_enter(&mut self, memory: &mut PlayerMemory) {
-        memory.player_query.0.y = memory.settings.normal_gravity;
+        // memory.player_query.0.y = memory.settings.normal_gravity;
+        memory.a.0.y = -2.0;
     }
 }
 
 #[derive(Component)]
-pub struct PlayerFSM(pub Machinery<PlayerMemory, PlayerState>);
-impl PlayerFSM {
+pub struct PlayerFSM<'a>(pub Machinery<PlayerMemory<'a>, PlayerState>);
+impl<'a> PlayerFSM<'a> {
     pub fn new() -> Self {
         let machinery = MachineryBuilder::default()
             .state(

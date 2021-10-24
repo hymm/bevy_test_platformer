@@ -58,7 +58,7 @@ pub fn load_state_run_criteria(
     // mut prev_state: Local<PreviousState>,
     current_state: Res<LoaderState>,
 ) -> ShouldRun {
-    // introduce a 1 frame delay for hard sync poipnt for on enter transitions.
+    // introduce a 1 frame delay for hard sync point for on enter transitions.
     // if prev_state.0 != *current_state {
     //     prev_state.0 = *current_state;
     //     return ShouldRun::No;

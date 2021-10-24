@@ -4,7 +4,9 @@ use crate::physics::{
     PhysicsSettings, PhysicsSettingsHandle, Position, Velocity,
 };
 use crate::player_fsm::{PlayerFSM, PlayerMemory, PlayerState};
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
+use std::borrow::BorrowMut;
 
 #[derive(Component)]
 pub struct Player;
@@ -45,27 +47,30 @@ pub fn spawn_player(mut commands: Commands, mut material_assets: ResMut<Assets<C
         .insert(PlayerFSM::new());
 }
 
-pub fn player_input(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
-    mut player_fsm: Query<&mut PlayerFSM, With<Player>>,
-    physics_settings: Res<Assets<PhysicsSettings>>,
-    physics_settings_handle: Res<PhysicsSettingsHandle>,
+pub fn player_input<'r, 'w, 's, 't0, 't1, 't2, 'r0, 'r1>(
+    keyboard_input: Res<'r, Input<KeyCode>>,
+    mut query: Query<
+        'w,
+        's,
+        (&'t0 mut Velocity, &'t1 mut Acceleration, &'t2 PlayerFSM<'t1>),
+        With<Player>,
+    >,
+    physics_settings: Res<'r0, Assets<PhysicsSettings>>,
+    physics_settings_handle: Res<'r1, PhysicsSettingsHandle>,
 ) {
-    let s = physics_settings
+    let s: &PhysicsSettings = physics_settings
         .get(&physics_settings_handle.0)
         .expect("no physics settings found");
-    let (mut v, mut a) = query.single_mut();
-    let mut fsm = player_fsm.single_mut();
+
+    let (mut v, mut a, mut fsm) = query.single_mut();
 
     if keyboard_input.just_pressed(KeyCode::Space) && a.0.y == 0.0 {
         v.0.y = s.initial_jump_velocity;
-        let mut memory = PlayerMemory {
-            player_query: &mut *a,
-            settings: &mut s
-        };
-        fsm.0.change_active_state(Some(PlayerState::InAirPressedB), &mut memory, true);
-        fsm.0.update(&mut memory);
+        let mut player_memory = PlayerMemory { a };
+        fsm.0
+            .change_active_state(Some(PlayerState::InAirPressedB), &mut player_memory, true)
+            .unwrap();
+        fsm.0.update(&mut player_memory);
         a.0.y = s.hold_gravity;
     }
 
@@ -74,7 +79,7 @@ pub fn player_input(
     }
 }
 
-pub fn player_horizontal_accel(
+pub fn player_horizontal_accel<'a>(
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Velocity, &mut Acceleration), With<Player>>,
     physics_settings: Res<Assets<PhysicsSettings>>,
